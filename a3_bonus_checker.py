@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Generate A3! team combinations."""
+import argparse
 import itertools
-from typing import (Iterable, Tuple, Dict)
+import sys
+from typing import (Iterable, Tuple, Dict, Set)
 
 
 MEMBERS = {
@@ -9,7 +11,7 @@ MEMBERS = {
     "天馬", "幸", "椋", "三角", "一成",
     "万里", "十座", "太一", "臣", "左京",
     "紬", "丞", "密", "誉", "東"
-}  # type: Iterable[str]
+}  # type: Set[str]
 BONUS_COMBINATIONS = (
     (("co", 50), ("天馬", "幸", "椋", "三角", "一成")),
     (("co", 40), ("椋", "十座", "密", "東")),
@@ -66,15 +68,18 @@ BONUS_COMBINATIONS = (
 
 
 def main() -> None:
-    for team in gen_teams(MEMBERS):
-        bonus = check_bonus(team)
-        print("{team}: {bonus}\n"
-              .format(team=str(team),
+    check_members, number, specified = init()
+
+    for team in gen_teams(check_members, number):
+        allteam = team + specified
+        bonus = check_bonus(allteam)
+        print("{team}: {bonus}"
+              .format(team=str(allteam),
                       bonus=str(bonus)))
 
 
-def gen_teams(members: Iterable[str]) -> Iterable[Tuple[str, ...]]:
-    return itertools.combinations(members, 5)
+def gen_teams(members: Iterable[str], num: int=5) -> Iterable[Tuple[str, ...]]:
+    return itertools.combinations(members, num)
 
 
 def has_bonus(team: Iterable[str], bonusmem: Iterable[str]) -> bool:
@@ -92,6 +97,45 @@ def check_bonus(team: Iterable[str]) -> Dict[str, int]:
             genre, point = bonusdetails
             bonuses[genre] += point
     return bonuses
+
+
+def parse_arg() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, add_help=True)
+    parser.add_argument(
+        "-m", "--members",
+        metavar="member",
+        nargs="+",
+        help="specify members")
+    parser.add_argument(
+        "-g", "--guest",
+        help="include guest",
+        action="store_true")
+    return parser.parse_args()
+
+
+def init() -> Tuple[Iterable[str], int, Tuple[str, ...]]:
+    number = 5
+    args = parse_arg()
+    if args.guest:
+        if args.members and len(args.members) > 6:
+            sys.exit("Too many members")
+        number += 1
+    else:
+        if args.members and len(args.members) > 5:
+            sys.exit("Too many members")
+
+    if not args.members:
+        return (MEMBERS, number, ())
+
+    specified = set(args.members)
+    number -= len(specified)
+    check_members = MEMBERS - specified
+
+    for argmember in args.members:
+        if argmember not in MEMBERS:
+            sys.exit("Invalid member: {}".format(argmember))
+
+    return (check_members, number, tuple(specified))
 
 
 if __name__ == "__main__":
