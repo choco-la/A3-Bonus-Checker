@@ -83,10 +83,9 @@ def gen_teams(members: Iterable[str], num: int=5) -> Iterable[Tuple[str, ...]]:
 
 
 def has_bonus(team: Iterable[str], bonusmem: Iterable[str]) -> bool:
-    for member in bonusmem:
-        if member not in team:
-            return False
-    return True
+    teamset = set(team)
+    bonusset = set(bonusmem)
+    return bonusset.issubset(teamset)
 
 
 def check_bonus(team: Iterable[str]) -> Dict[str, int]:
